@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Elastic\ScoutDriverPlus\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
@@ -38,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class Record extends Pivot
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $table = 'records';
 
@@ -48,6 +49,21 @@ class Record extends Pivot
         'title',
         'release_year',
         'imdb_id',
-        'images'
+        'images',
+        'metadata'
     ];
+
+    /**
+     * Get the indexable data array for the model.
+     *
+     * @return array
+     */
+    public function toSearchableArray(): array
+    {
+        if ($this->metadata)    {
+            return json_decode($this->metadata, true);
+        } else {
+            return [];
+        }
+    }
 }

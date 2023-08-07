@@ -4,11 +4,9 @@ namespace App\Services;
 
 use App\Contracts\MessageQueuePublisher;
 use App\Repositories\RecordRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
+use Illuminate\Support\Collection;
 
 class RecordService
 {
@@ -24,26 +22,30 @@ class RecordService
         $this->queuePublisher = $messageQueuePublisher;
     }
 
-    public function getAllRecords(): \Illuminate\Support\Collection
+    public function getAllRecords(): Collection
     {
         return $this->repository->all();
     }
 
-    /**
-     * @throws \Exception
-     */
-    public function createRecord(array $data): Model
+    public function createRecord(array $data): bool
     {
-        $this->queuePublisher->publish(
-            json_encode(
-                array_merge([
-                    'event_name' => 'NewRecord',
-                ], $data)
-            ),
-            self::RECORDS_QUEUE
-        );
+        try {
+            $createdRecord = $this->repository->create($data);
 
-        return $this->repository->create($data);
+            $this->queuePublisher->publish(
+                json_encode(
+                    array_merge(
+                        ['pattern' => 'records_to_analyze'],
+                        ['data' => $createdRecord]
+                    )
+                ),
+                self::RECORDS_QUEUE
+            );
+
+            return true;
+        } catch (\Exception $exception) {
+            return false;
+        }
     }
 
     public function findRecordById(int $id): ?Model
@@ -59,14 +61,21 @@ class RecordService
 
     public function updateRecord(int $id, array $data): Model
     {
-        $record = $this->findRecordById($id);
-        $record->update($data);
+        return $this->repository->update($data, $id);
+    }
 
-        return $record;
+    public function saveRecord(Model $record): bool
+    {
+        return $record->save();
     }
 
     public function deleteRecord(int $id): bool
     {
         return $this->repository->delete($id);
+    }
+
+    public function searchRecords(string $query): Collection
+    {
+        return $this->repository->search($query);
     }
 }

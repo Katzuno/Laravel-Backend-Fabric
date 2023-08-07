@@ -14,6 +14,16 @@ abstract class BaseRepository implements RepositoryInterface
         $this->model = $model;
     }
 
+    private function removeNullValues(array $attributes): array {
+        foreach ($attributes as $key => $value) {
+            if (empty($value)) {
+                unset($attributes[$key]);
+            }
+        }
+
+        return $attributes;
+    }
+
     public function all(): Collection
     {
         return $this->model->all();
@@ -32,6 +42,10 @@ abstract class BaseRepository implements RepositoryInterface
     public function update(array $attributes, int $id): Model
     {
         $model = $this->find($id);
+        $currentAttributes = $model->getAttributes();
+        $attributes = $this->removeNullValues($attributes);
+        $attributes = array_merge($currentAttributes, $attributes);
+
         $model->update($attributes);
         return $model;
     }

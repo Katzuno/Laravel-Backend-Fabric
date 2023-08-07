@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateRecordRequest;
 use App\Services\RecordService;
 use App\DTOs\RecordDTO;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 /**
@@ -62,8 +63,8 @@ class RecordController
     {
         $dto = new RecordDTO($request->validated());
 
-        $record = $this->recordService->createRecord(get_object_vars($dto));
-        return response()->json($record, ResponseAlias::HTTP_CREATED);
+        $recordCreated = $this->recordService->createRecord(get_object_vars($dto));
+        return response()->json($recordCreated, ResponseAlias::HTTP_CREATED);
     }
 
 
@@ -89,11 +90,13 @@ class RecordController
     public function show(int $id): JsonResponse
     {
         $record = $this->recordService->findRecordById($id);
-        return response()->json($record, ResponseAlias::HTTP_OK);
+        $recordDto = new RecordDTO($record->getAttributes());
+
+        return response()->json($recordDto, ResponseAlias::HTTP_OK);
     }
 
     /**
-     * @OA\Put(
+     * @OA\Patch(
      *     path="/records/{id}",
      *     summary="Update a record",
      *     operationId="updateRecord",
@@ -144,5 +147,42 @@ class RecordController
     {
         $this->recordService->deleteRecord($id);
         return response()->json(null, ResponseAlias::HTTP_NO_CONTENT);
+    }
+
+
+    /**
+     * @OA\Get(
+     *     path="/records/search",
+     *     summary="Search records",
+     *     description="Search records by a query string",
+     *     tags={"Records"},
+     *     @OA\Parameter(
+     *         name="query",
+     *         in="query",
+     *         description="The query string to search for",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="string"
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Record")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request. User has not input the query."
+     *     )
+     * )
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $query = $request->get('query');
+        $results = $this->recordService->searchRecords($query);
+        return response()->json($results);
     }
 }

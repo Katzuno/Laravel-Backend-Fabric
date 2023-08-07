@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('records')->group(function () {
     Route::get('/', [RecordController::class, 'index']);
     Route::post('/', [RecordController::class, 'store']);
+    Route::get('/search', [RecordController::class, 'search']);
     Route::get('/{record}', [RecordController::class, 'show']);
-    Route::put('/{record}', [RecordController::class, 'update']);
+    Route::patch('/{record}', [RecordController::class, 'update']);
     Route::delete('/{record}', [RecordController::class, 'destroy']);
 });

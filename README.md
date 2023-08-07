@@ -1,66 +1,56 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## Requirments:
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+- docker-compose
+- php
+- composer
+- (optional) make
 
-## About Laravel
+## How it works
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+At the very basic level the laravel service exposes a CRUD and search api through RecordsController.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+This api also does a RabbitMQ publish on queue ``records_to_analyze`` when a new record is created. 
+We are doing this not to block requests while we are searching for matches and maybe processing that information in our NEST JS service.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+This service also implements a consumer that you can run through command which listens for new messages in the ``records_analyzed`` queue from rabbitmq.
 
-## Learning Laravel
+When processing the messages from the queue it updates a record in the database.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## How Nest service works
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+When the nest service is opened it automatically consumes messages from the ``records_to_analyze`` queue (behavior defined in app controller).
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Those messages are consumed by interogating omdb api service on both scenario (if we have imdb_id or if we don't have on the payload).
 
-## Laravel Sponsors
+If it got data from the omdb api it publishes the message through rabbit-mq publisher to the ``records_analyzed`` queue.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Run the app
 
-### Premium Partners
+The app was containerized using sail. 
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+To run the app for the first time you have to use the command ``make up`` that will automatically install the compose packages, including sail.
+If you are on the first run, is run please open also the consumer with ``make up-consumer``.
 
-## Contributing
+After the first run it is enough to do ``make up-full`` or the associated command from the makefile.
+This will start the app and also the ``records_analyzed`` consumer.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+To run the unit tests use ``make test``
 
-## Code of Conduct
+If you encounter problems make sure you have the .env file created and migrations are executed (if not use ``make migrate``)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## How to use
 
-## Security Vulnerabilities
+The API has a full swagger docs at the address ``http://localhost/api/documentation``
+Once everything is up and running you can use it from swagger or from the React interface.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-## License
+## What can be better
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Functional tests
+- Testing environments for elastic and rabbit
+- Code organization
+- Think about security, type of queues, requeue, ack, nack, etc.
+- Elasticsearch filters by different fields
+- Exceptions handling
+- Logging
+- Other system architecture decisions should be changed (improved) based on specific use cases.

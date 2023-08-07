@@ -93,7 +93,29 @@
                     }
                 }
             },
-            "put": {
+            "delete": {
+                "tags": [
+                    "Records"
+                ],
+                "summary": "Delete a record",
+                "operationId": "deleteRecord",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Record deleted successfully"
+                    }
+                }
+            },
+            "patch": {
                 "tags": [
                     "Records"
                 ],
@@ -131,26 +153,43 @@
                         }
                     }
                 }
-            },
-            "delete": {
+            }
+        },
+        "/records/search": {
+            "get": {
                 "tags": [
                     "Records"
                 ],
-                "summary": "Delete a record",
-                "operationId": "deleteRecord",
+                "summary": "Search records",
+                "description": "Search records by a query string",
+                "operationId": "3a26ef4b46f57f4ec834f0179e9d86b6",
                 "parameters": [
                     {
-                        "name": "id",
-                        "in": "path",
+                        "name": "query",
+                        "in": "query",
+                        "description": "The query string to search for",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Record deleted successfully"
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Record"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request. User has not input the query."
                     }
                 }
             }
