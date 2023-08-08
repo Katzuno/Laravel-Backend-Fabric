@@ -46,6 +46,7 @@ Once everything is up and running you can use it from swagger or from the React 
 
 ## What can be better
 
+- Pagination
 - Functional tests
 - Testing environments for elastic and rabbit
 - Code organization
